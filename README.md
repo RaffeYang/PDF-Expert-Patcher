@@ -116,4 +116,4 @@ ad-hoc 签名会改变应用身份，可能影响钥匙串、iCloud、扩展等�
 
 可用 `DEVELOPER_DIR`、`CLANG`、`SDKROOT`、`PYTHON` 覆盖工具路径。
 注入使用绝对 dylib 路径；迁移安装目录后需全量重装补丁，长路径可能耗尽 header 空间。
-fishhook 来源及许可证见 [vendor 说明](src/vendor/README.md)。本地 Git 尚无远程仓库。
+fishhook 来源及许可证见 [vendor 说明](src/vendor/README.md)。
