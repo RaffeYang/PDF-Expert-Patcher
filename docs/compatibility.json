@@ -56,6 +56,271 @@
         "Hashes captured read-only in this session; no install metadata existed for legacy modules.",
         "v1.4.0 diagnostic code is not covered by this user confirmation."
       ]
+    },
+    {
+      "id": "2026-10-15-v1.4.1-context-menu-partial",
+      "date": "2026-10-15",
+      "app": {
+        "CFBundleIdentifier": "com.readdle.PDFExpert-Mac",
+        "CFBundleShortVersionString": "3.13.4",
+        "CFBundleVersion": "1177"
+      },
+      "host": {
+        "architecture": "x86_64"
+      },
+      "release": "1.4.1",
+      "evidence": "user_confirmation",
+      "statement": "用户确认 Summarize、Explain、Translate to 已隐藏；截图显示页面右键 Translate PDF 仍可见。仅确认上述菜单范围。",
+      "patches": [
+        {
+          "patch": "TabPatch",
+          "version": "1.4.0",
+          "binary_sha256": "e623f6a36bc962f1b79a9f0fda0f5b2111adceaf2ebe94b1464292729d267e1a"
+        },
+        {
+          "patch": "SidebarPatch",
+          "version": "1.4.0",
+          "binary_sha256": "b1d4c44dea1762311478e0163626b30f5575f414981f464ceee74314ecee983d"
+        },
+        {
+          "patch": "ToolbarPatch",
+          "version": "1.4.1",
+          "binary_sha256": "4592a39fbb997e7d2a488ab21b0c38cc447e9162b86c92cf0665554909defff6"
+        },
+        {
+          "patch": "KeychainFix",
+          "version": "1.4.0",
+          "binary_sha256": "cc0752be1f749e57bd777a13fc2f6d75174108f9cfd4a6004b96fbbd6bf7b486"
+        }
+      ],
+      "manual_validation": {
+        "context_menu": "fail",
+        "login_restart": "not_recorded"
+      },
+      "context_menu_entries": {
+        "Summarize": "pass",
+        "Explain": "pass",
+        "Translate to": "pass",
+        "Translate PDF": "fail"
+      }
+    },
+    {
+      "id": "2026-10-15-v1.4.2-context-menu-confirmed",
+      "date": "2026-10-15",
+      "app": {
+        "CFBundleIdentifier": "com.readdle.PDFExpert-Mac",
+        "CFBundleShortVersionString": "3.13.4",
+        "CFBundleVersion": "1177"
+      },
+      "app_identity": {
+        "path": "/Applications/PDF Expert.app",
+        "executable_sha256": "1f4ee2b575f4151f66efeb41423468f4f30aa81b085700db0177bc40df5b5721",
+        "slices": [
+          {
+            "index": 0,
+            "architecture": "x86_64",
+            "patch_load_paths": [
+              "/Users/RaffeYang/Library/PEPatch/TabPatch.dylib",
+              "/Users/RaffeYang/Library/PEPatch/SidebarPatch.dylib",
+              "/Users/RaffeYang/Library/PEPatch/ToolbarPatch.dylib",
+              "/Users/RaffeYang/Library/PEPatch/KeychainFix.dylib"
+            ]
+          },
+          {
+            "index": 1,
+            "architecture": "arm64",
+            "patch_load_paths": [
+              "/Users/RaffeYang/Library/PEPatch/TabPatch.dylib",
+              "/Users/RaffeYang/Library/PEPatch/SidebarPatch.dylib",
+              "/Users/RaffeYang/Library/PEPatch/ToolbarPatch.dylib",
+              "/Users/RaffeYang/Library/PEPatch/KeychainFix.dylib"
+            ]
+          }
+        ]
+      },
+      "host": {
+        "architecture": "x86_64"
+      },
+      "release": "1.4.2",
+      "evidence": "user_confirmation",
+      "statement": "用户在安装 ToolbarPatch v1.4.2 后回复：测试了完美。结合上一轮三个入口已隐藏、Translate PDF 残留的截图与本轮修复，确认四个目标右键项均已隐藏。顶部入口和常用工具侧栏关闭按钮为用户描述的既有功能，本轮未逐项重新验收。",
+      "patches": [
+        {
+          "patch": "TabPatch",
+          "version": "1.4.0",
+          "binary_sha256": "e623f6a36bc962f1b79a9f0fda0f5b2111adceaf2ebe94b1464292729d267e1a"
+        },
+        {
+          "patch": "SidebarPatch",
+          "version": "1.4.0",
+          "binary_sha256": "b1d4c44dea1762311478e0163626b30f5575f414981f464ceee74314ecee983d"
+        },
+        {
+          "patch": "ToolbarPatch",
+          "version": "1.4.2",
+          "binary_sha256": "b9695ef33bc203d2193e93ea131fc45ed189bb2c46f6baf914a3fb1635deb921"
+        },
+        {
+          "patch": "KeychainFix",
+          "version": "1.4.0",
+          "binary_sha256": "cc0752be1f749e57bd777a13fc2f6d75174108f9cfd4a6004b96fbbd6bf7b486"
+        }
+      ],
+      "manual_validation": {
+        "context_menu": "pass",
+        "tab": "not_recorded",
+        "sidebar": "not_retested",
+        "toolbar": "not_retested",
+        "login_restart": "not_retested",
+        "save_pdf": "not_recorded",
+        "extensions": "not_recorded"
+      },
+      "context_menu_entries": {
+        "Summarize": "pass",
+        "Explain": "pass",
+        "Translate to": "pass",
+        "Translate PDF": "pass"
+      }
+    }
+  ],
+  "observations": [
+    {
+      "id": "2026-10-15-v1.4.1-toolbar-context-menu-deployed",
+      "evidence": "read_only_observation",
+      "captured_at": "2026-10-15T13:39:38.642028+00:00",
+      "app": {
+        "CFBundleIdentifier": "com.readdle.PDFExpert-Mac",
+        "CFBundleShortVersionString": "3.13.4",
+        "CFBundleVersion": "1177"
+      },
+      "app_path": "/Applications/PDF Expert.app",
+      "executable_sha256": "1f4ee2b575f4151f66efeb41423468f4f30aa81b085700db0177bc40df5b5721",
+      "host": {
+        "macos": "26.7.1",
+        "architecture": "x86_64"
+      },
+      "patches": [
+        {
+          "patch": "TabPatch",
+          "project_version": "1.4.0",
+          "installed_sha256": "e623f6a36bc962f1b79a9f0fda0f5b2111adceaf2ebe94b1464292729d267e1a",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        },
+        {
+          "patch": "SidebarPatch",
+          "project_version": "1.4.0",
+          "installed_sha256": "b1d4c44dea1762311478e0163626b30f5575f414981f464ceee74314ecee983d",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        },
+        {
+          "patch": "ToolbarPatch",
+          "project_version": "1.4.1",
+          "installed_sha256": "4592a39fbb997e7d2a488ab21b0c38cc447e9162b86c92cf0665554909defff6",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        },
+        {
+          "patch": "KeychainFix",
+          "project_version": "1.4.0",
+          "installed_sha256": "cc0752be1f749e57bd777a13fc2f6d75174108f9cfd4a6004b96fbbd6bf7b486",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        }
+      ],
+      "automated_tests": "./patch.sh --test passed; 44 Python tests plus native, hook-chain, privacy and temporary-app integration; Python suite rerun after context_menu capture field added",
+      "manual_validation": {
+        "tab": "pending",
+        "sidebar": "pending",
+        "toolbar": "pending",
+        "context_menu": "pending",
+        "login_restart": "pending",
+        "save_pdf": "pending",
+        "extensions": "pending"
+      },
+      "manual_evidence": "",
+      "signature_check": "Existing Widgets Dmg Extension.appex x86_64 signature invalid; unchanged by this module update",
+      "unchanged_verified": [
+        "app executable and dependency load paths",
+        "TabPatch installed binary",
+        "SidebarPatch installed binary",
+        "KeychainFix installed binary"
+      ]
+    },
+    {
+      "id": "2026-10-15-v1.4.2-translate-pdf-closure-deployed",
+      "evidence": "read_only_observation",
+      "captured_at": "2026-10-15T13:47:44.687443+00:00",
+      "app": {
+        "CFBundleIdentifier": "com.readdle.PDFExpert-Mac",
+        "CFBundleShortVersionString": "3.13.4",
+        "CFBundleVersion": "1177"
+      },
+      "app_path": "/Applications/PDF Expert.app",
+      "executable_sha256": "1f4ee2b575f4151f66efeb41423468f4f30aa81b085700db0177bc40df5b5721",
+      "host": {
+        "macos": "26.7.1",
+        "architecture": "x86_64"
+      },
+      "patches": [
+        {
+          "patch": "TabPatch",
+          "project_version": "1.4.0",
+          "installed_sha256": "e623f6a36bc962f1b79a9f0fda0f5b2111adceaf2ebe94b1464292729d267e1a",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        },
+        {
+          "patch": "SidebarPatch",
+          "project_version": "1.4.0",
+          "installed_sha256": "b1d4c44dea1762311478e0163626b30f5575f414981f464ceee74314ecee983d",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        },
+        {
+          "patch": "ToolbarPatch",
+          "project_version": "1.4.2",
+          "installed_sha256": "b9695ef33bc203d2193e93ea131fc45ed189bb2c46f6baf914a3fb1635deb921",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        },
+        {
+          "patch": "KeychainFix",
+          "project_version": "1.4.0",
+          "installed_sha256": "cc0752be1f749e57bd777a13fc2f6d75174108f9cfd4a6004b96fbbd6bf7b486",
+          "referenced_at_expected_path": true,
+          "matches_build": true,
+          "matches_source": true,
+          "matches_recipe": true
+        }
+      ],
+      "automated_tests": "./patch.sh --test passed; closure regression reproduced against 1.4.1 before fix",
+      "manual_validation": {
+        "tab": "pending",
+        "sidebar": "pending",
+        "toolbar": "pending",
+        "context_menu": "pending",
+        "login_restart": "pending",
+        "save_pdf": "pending",
+        "extensions": "pending"
+      },
+      "manual_evidence": "",
+      "signature_check": "Existing Widgets Dmg Extension.appex x86_64 signature invalid; unchanged"
     }
   ]
 }

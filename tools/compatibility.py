@@ -16,7 +16,7 @@ def capture(app, build, install):
             'host': {'macos': platform.mac_ver()[0], 'architecture': platform.machine()},
             'automated_tests': 'not_run_by_capture',
             'manual_validation': {name: 'pending' for name in
-                ('tab', 'sidebar', 'toolbar', 'login_restart', 'save_pdf', 'extensions')},
+                ('tab', 'sidebar', 'toolbar', 'context_menu', 'login_restart', 'save_pdf', 'extensions')},
             'manual_evidence': ''}
 
 

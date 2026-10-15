@@ -1,5 +1,5 @@
 // src/ToolbarPatch.m — Patch 3: remove the AI / Translate entries from the
-// main toolbar (their side panels are SwiftUI-drawn and cannot have their
+// main toolbar and document context menus (their side panels are SwiftUI-drawn and cannot have their
 // close buttons hidden at the AppKit level — see analysis/ai-sidebar-findings.md).
 //
 // Mechanism: same global button-level hook as SidebarPatch, matching the
@@ -23,6 +23,8 @@ static NSArray *TBToolbarIdentifiersToHide(void) {
 // -----------------------------------------------------------------------------
 
 static NSMutableDictionary<NSString *, NSValue *> *g_origImpsBySelector;
+static IMP g_origMenuUpdate;
+static id g_menuTrackingObserver;
 
 static void TBLog(NSString *fmt, ...) {
     va_list args;
@@ -33,6 +35,73 @@ static void TBLog(NSString *fmt, ...) {
 
 static BOOL TBDebug(void) { return getenv("TOOLBARPATCH_DEBUG") != NULL; }
 static BOOL TBDisabled(void) { return getenv("TOOLBARPATCH_DISABLE") != NULL; }
+
+// Evidence: analysis/ai-context-menu-findings.md (3.13.4 DMG).
+// A nil target uses the document responder chain. Do not match generic action
+// names on unrelated explicit targets, or localized display titles.
+static BOOL TBIsContextEntry(NSMenuItem *item) {
+    NSString *action = item.action ? NSStringFromSelector(item.action) : @"";
+    // The document context entry uses RDAppKit's closure initializer, not the
+    // main-menu action. Its target is the item itself, action _closureAction:.
+    // Resolve the same Localizable.strings key used by the app; never hide
+    // arbitrary same-title items or all closure-backed menu items.
+    if ([action isEqualToString:@"_closureAction:"] && item.target == item) {
+        NSString *title = [[NSBundle mainBundle] localizedStringForKey:@"Translate PDF"
+                                                               value:@"Translate PDF" table:nil];
+        if ([item.title isEqualToString:title]) return YES;
+    }
+    if ([action isEqualToString:@"aiChatSummarizeAction:"] ||
+        [action isEqualToString:@"aiChatExplainAction:"] ||
+        [action isEqualToString:@"aiChatTranslateAction:"] ||
+        [action isEqualToString:@"toggleTranslationFeatureMainMenuAction:"]) return YES;
+    if ([action isEqualToString:@"summarize:"] ||
+        [action isEqualToString:@"explain:"] ||
+        [action isEqualToString:@"translate:"]) {
+        Class document = objc_getClass("_TtC14PDF_Expert_DMG36PDFDocumentsTabContentViewController");
+        if (!item.target || (document && [item.target isKindOfClass:document])) return YES;
+    }
+    Class translation = objc_getClass("_TtC14PDF_Expert_DMG27AIChatTranslateTextMenuItem");
+    if (translation && [item isKindOfClass:translation]) return YES;
+    // Translate to has no useful action itself: identify the language submenu.
+    for (NSMenuItem *child in item.submenu.itemArray) {
+        if (child.action == NSSelectorFromString(@"aiChatTranslateAction:") ||
+            (translation && [child isKindOfClass:translation])) return YES;
+    }
+    return NO;
+}
+
+static void TBFilterContextMenu(NSMenu *menu) {
+    if (TBDisabled() || ![menu isKindOfClass:[NSMenu class]]) return;
+    NSMenu *root = menu;
+    while (root.supermenu) root = root.supermenu;
+    if (root == NSApp.mainMenu) return;
+    for (NSMenuItem *item in menu.itemArray) {
+        if (TBIsContextEntry(item)) {
+            if (!item.hidden) {
+                item.hidden = YES;
+                if (TBDebug()) TBLog(@"hid context entry: action=%@ class=%@",
+                                    item.action ? NSStringFromSelector(item.action) : @"-",
+                                    NSStringFromClass(item.class));
+            }
+        } else if (item.submenu) {
+            TBFilterContextMenu(item.submenu);
+        }
+    }
+}
+
+static void TBMenuUpdate(id self, SEL cmd) {
+    if (g_origMenuUpdate) ((void (*)(id, SEL))g_origMenuUpdate)(self, cmd);
+    TBFilterContextMenu(self);
+}
+
+static void TBInstallMenuFilter(void) {
+    Method method = class_getInstanceMethod([NSMenu class], @selector(update));
+    if (method) g_origMenuUpdate = method_setImplementation(method, (IMP)TBMenuUpdate);
+    g_menuTrackingObserver = [[NSNotificationCenter defaultCenter]
+        addObserverForName:NSMenuDidBeginTrackingNotification object:nil queue:nil
+        usingBlock:^(NSNotification *note) { TBFilterContextMenu(note.object); }];
+    TBLog(@"context menu filter installed%s", TBDisabled() ? " (disabled)" : "");
+}
 
 static NSString *TBIdent(NSView *v) {
     NSString *a = [v respondsToSelector:@selector(accessibilityIdentifier)]
@@ -102,10 +171,11 @@ static void TBToolbarButtonMovedToWindow(id self, SEL _cmd) {
 }
 
 static void TBInstall(void) {
+    TBInstallMenuFilter();
     g_origImpsBySelector = [NSMutableDictionary new];
     Class cls = objc_getClass("RDAKButton");
     if (!cls) {
-        TBLog(@"RDAKButton not found — patch inactive (version change?)");
+        TBLog(@"RDAKButton not found — toolbar button hook inactive (version change?)");
         return;
     }
     TBHookClass(cls, @selector(viewDidMoveToWindow), (IMP)TBToolbarButtonMovedToWindow);

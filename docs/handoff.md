@@ -33,6 +33,7 @@
 | 类存在但标签没移动 | closeButton/约束/ivar 类型、实际 layout 日志 | TabPatch FixConstraints 与 TestHost |
 | 编辑侧栏 X 重现 | RDAKButton 是否存在、identifier 是否改变 | SidebarPatch 标识匹配 |
 | AI/翻译入口重现 | 实际按钮类、identifier、AppKit/SwiftUI 归属 | ToolbarPatch；不按位置猜按钮 |
+| AI/翻译右键项重现 | NSMenu.update／tracking 通知、action、语言子菜单类型；确认是否属于豁免的主菜单 | ToolbarPatch；不按本地化标题猜测 |
 | 每次启动要求登录 | 已装 KeychainFix 哈希、停用变量、四个 SecItem 操作结果和字段形状 | 先对照已确认 v1.3.2 基线，不能再次收窄查询 |
 | 仅 open 失败而直接 exec 正常 | LaunchServices、重复 Bundle ID、隔离和签名状态 | 启动路径问题，不能据此改 hook |
 
@@ -109,6 +110,7 @@ getProcedureAtAddress、decompile。不要假设 getAddressForLabel/getDisassemb
 | 标签类名/ivar/约束 | src/TabPatch.m；tests/TestHost.m；tools/hopper_dump.py |
 | 侧栏标识 | src/SidebarPatch.m；tests/SidebarPatchTest.m；tests/HookChainTest.m |
 | 工具栏标识 | src/ToolbarPatch.m；tests/ToolbarPatchTest.m；tests/HookChainTest.m |
+| AI/翻译右键入口 | src/ToolbarPatch.m；tests/ContextMenuPatchTest.m；analysis/ai-context-menu-findings.md |
 | 登录兼容性 | src/KeychainFix.m；tests/KeychainFixTest.m；真实退出/重启验收 |
 | 二进制命令/路径 | tools/inject_lc.py；tests/test_inject_lc.py |
 | 部署与回滚 | tools/deploy.py；tests/test_deploy.py；tests/real_deployment.sh |

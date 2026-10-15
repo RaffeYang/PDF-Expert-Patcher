@@ -25,6 +25,7 @@ class CompatibilityTests(unittest.TestCase):
             app = self.make_app(root, 'app', thin())
             report = compatibility.capture(app, root / 'build', root / 'install')
             self.assertTrue(all(value == 'pending' for value in report['manual_validation'].values()))
+            self.assertEqual(report['manual_validation'].get('context_menu'), 'pending')
             self.assertEqual(report['automated_tests'], 'not_run_by_capture')
             self.assertEqual(report['evidence'], 'read_only_observation')
             self.assertEqual(len(report['patches']), 4)

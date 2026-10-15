@@ -9,7 +9,7 @@ PDF Expert 3.13.4 build 1177；App Store 版与未来版本需重新识别模块
 |---|---|---|---|
 | TabPatch | `TabContentView.layout`；重写关闭按钮约束并加幂等 identifier | `src/TabPatch.m` | `tests/TestHost.m` |
 | SidebarPatch | `RDAKButton.viewDidMoveToWindow`；identifier 含 `com.readdle.right-panel.close` | `src/SidebarPatch.m` | `tests/SidebarPatchTest.m`、`tests/HookChainTest.m` |
-| ToolbarPatch | 同一 selector；精确匹配 `com.readdle.toolbar.main.chat` / `.translate` | `src/ToolbarPatch.m` | `tests/ToolbarPatchTest.m`、`tests/HookChainTest.m` |
+| ToolbarPatch | RDAKButton 标识过滤顶部入口；NSMenu.update／tracking 通知过滤四个右键项 | `src/ToolbarPatch.m` | `tests/ToolbarPatchTest.m`、`tests/ContextMenuPatchTest.m`、`tests/HookChainTest.m` |
 | KeychainFix | fishhook 重绑定 SecItemAdd/CopyMatching/Update/Delete；统一 sanitize 查询 | `src/KeychainFix.m`、`src/vendor/` | `tests/KeychainFixTest.m` |
 
 TabPatch 的已知类名 `_TtC14PDF_Expert_DMG14TabContentView` 以及 ivar
@@ -22,6 +22,14 @@ KeychainFix 的跨 image 路由范围沿用用户已确认可用的 v1.3 策略�
 `kSecAttrAccessGroup`，保留其他字段；Update 的新值字典不修改。
 读/写查询可能具有不同字段，不能以“必须同时存在某些字段”为条件拆分路由。
 fishhook rc=0 仅表示注册成功，不保证未来 OS/image 都已重绑。
+
+v1.4.1 菜单过滤独立安装，不依赖 RDAKButton。NSMenu.update 原 IMP 恰调用一次，
+之后递归过滤；NSMenuDidBeginTrackingNotification 补扫延迟项。按 action 或
+Translate to 直属语言子项的 action／专用类型匹配整个父项。通用
+summarize:/explain:/translate: 只接受 nil responder target 或文档控制器 target。
+主菜单及后代豁免，不移除 item、不改变业务 action。v1.4.2 的 Translate PDF
+自 target `_closureAction:` 项同时精确匹配 mainBundle Localizable.strings 的同名键；
+仅 action 无法区分其他闭包项。菜单过滤共用 TOOLBARPATCH_DISABLE；证据见[菜单取证](../analysis/ai-context-menu-findings.md)。
 
 ## 构建与版本追踪
 

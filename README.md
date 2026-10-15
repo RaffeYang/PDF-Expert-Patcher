@@ -9,18 +9,19 @@ A patcher that makes PDF Expert feel more at home on macOS.
 
 ---
 
-当前版本见 [VERSION](VERSION)：**1.4.0**。面向 macOS 官网 DMG 版 PDF Expert 的
+当前版本见 [VERSION](VERSION)：**1.4.2**。面向 macOS 官网 DMG 版 PDF Expert 的
 四个独立运行时补丁；已知适配基线为 **3.13.4 build 1177**。
 
 | 模块 | 效果 |
 |---|---|
 | TabPatch | 标签关闭按钮移到左侧 |
 | SidebarPatch | 隐藏已识别的编辑工具右侧栏关闭按钮 |
-| ToolbarPatch | 隐藏 AI 与翻译工具栏入口 |
+| ToolbarPatch | 隐藏 AI 与翻译工具栏入口及四个 AI／翻译右键项 |
 | KeychainFix | 沿用已恢复正常的登录钥匙串路由 |
 
 大版本失效或其他 LLM 接手：先读 [AGENTS.md](AGENTS.md)，再读
 [交接手册](docs/handoff.md)。完整文档见 [文档索引](docs/index.md)。
+官方更新后的具体步骤见[更新操作指南](docs/update-guide.md)。
 
 ## 日常使用
 
@@ -86,13 +87,19 @@ app、外部 dylib 和元数据不是一个原子事务，断电/SIGKILL 不保�
 ## 已确认的登录基线
 
 v1.3.1 收窄 KeychainFix 查询范围后出现重启需登录的回归；v1.3.2 已撤回，用户确认正常。
-v1.4.0 **保留统一查询路由，只改善诊断日志**，不再用 service/class/DP/group 同时匹配
+v1.4.x **保留统一查询路由，只改善诊断日志**，不再用 service/class/DP/group 同时匹配
 限制读写。详细证据见 [兼容性记录](docs/compatibility.md)。
 
 ad-hoc 签名会改变应用身份，可能影响钥匙串、iCloud、扩展等。自动测试不能代替
 真实界面、保存文档和登录后重启验收；arm64 构建通过也不等于 arm64 运行验证。
 
 ## 调试与配置
+
+ToolbarPatch 额外隐藏右键中的 Summarize、Explain、Translate to、Translate PDF，
+按 action／语言子菜单类型匹配；Translate PDF 闭包项还精确核对应用的本地化标题。保留主菜单入口和 AI／翻译业务，
+不修改 SwiftUI 面板的关闭按钮。`TOOLBARPATCH_DISABLE` 同时停用工具栏与菜单过滤。
+菜单过滤的自动回归已覆盖；2026-10-15 用户已确认 v1.4.2 四个右键项隐藏正常，
+确认仅绑定 3.13.4 build 1177 / Intel，未来版本仍需重新验收。
 
 直接 exec 主程序时设置环境变量；`open -a` 不传递这些变量：
 

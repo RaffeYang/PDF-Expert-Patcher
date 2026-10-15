@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.4.2 (2026-10-15)
+
+- 修复 v1.4.1 漏掉的 Translate PDF 右键项：真实入口使用 RDAppKit 的
+  `_closureAction:` 且 target 为 item 自身，并非主菜单 action。精确核对应用
+  Localizable.strings 的 `Translate PDF` 标题；保留其他闭包项和主菜单。
+- 补上与真实创建形状一致的失败回归测试；v1.4.1 其他三个入口已获用户确认隐藏，
+  Translate PDF 在截图中仍可见，不把旧替身测试视为四项真实验收通过。
+
+## v1.4.1 (2026-10-15)
+
+- ToolbarPatch 增加 AI／翻译右键入口过滤：Summarize、Explain、Translate to、
+  Translate PDF。按 action／专用语言菜单类型识别，保留主菜单，不修改 SwiftUI X。
+- NSMenu.update 保留原调用并在其后过滤；开始 tracking 时补扫延迟生成的菜单。
+  仅设置 hidden，不移除菜单对象；TOOLBARPATCH_DISABLE 同时停用新旧两部分。
+- 新增菜单原调用、重复更新、延迟项、嵌套项、同名普通项、主菜单豁免与停用测试。
+  真实 PDF 右键仍需人工验收；其他三个模块源码和 Keychain 路由未修改。
+
 ## v1.4.0 (2026-10-10)
 
 - 新增 `--build NAME` / `--update NAME`；单模块只构建/替换对应 dylib 和元数据，

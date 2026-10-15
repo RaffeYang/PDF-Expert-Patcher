@@ -5,6 +5,7 @@
 | 文档 | 用途 |
 |---|---|
 | [../README.md](../README.md) | 日常使用、命令、更新、备份与恢复 |
+| [update-guide.md](update-guide.md) | 官方更新后的全量重装、单模块适配、验收和回退 |
 | [../AGENTS.md](../AGENTS.md) | LLM 必须先读的工作基线与约束 |
 | [handoff.md](handoff.md) | 大版本失效时的诊断、发现、修复与交接步骤 |
 | [architecture.md](architecture.md) | 代码职责、运行时机制、构建和部署设计 |
@@ -21,6 +22,7 @@
 | [dev-notes.md](dev-notes.md) | 排障历史；包含已废弃路线，先看现行手册 |
 | [../analysis/FINDINGS.md](../analysis/FINDINGS.md) | 3.13.4 x86_64 标签布局证据 |
 | [../analysis/ai-sidebar-findings.md](../analysis/ai-sidebar-findings.md) | AppKit/SwiftUI 侧栏与工具栏证据 |
+| [../analysis/ai-context-menu-findings.md](../analysis/ai-context-menu-findings.md) | 3.13.4 x86_64 AI／翻译菜单 action 与过滤边界 |
 | [../analysis/hopper_dump.txt](../analysis/hopper_dump.txt) | 对应旧版的反编译导出，地址不能直接迁移 |
 | `superpowers/specs/`、`superpowers/plans/` | 各轮设计与执行记录；不是现行行为的唯一来源 |
 
