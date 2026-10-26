@@ -1,126 +1,160 @@
 # PDF Expert Patcher
 A patcher that makes PDF Expert feel more at home on macOS.
 
-- Left close tabs
+- Move tab close buttons to the left
 - Hide AI & Translator
-- Hide sidebar close button
+- Hide sidebar close buttons
 
 ![Showcase](./images/Showcase.png)
 
 ---
 
-当前版本见 [VERSION](VERSION)：**1.4.2**。面向 macOS 官网 DMG 版 PDF Expert 的
-四个独立运行时补丁；已知适配基线为 **3.13.4 build 1177**。
+Current version: **1.4.2**, as recorded in [VERSION](VERSION). Four independent
+runtime patches for the official DMG edition of PDF Expert on macOS, with
+**3.13.4 build 1177** as the known compatibility baseline.
 
-| 模块 | 效果 |
+| Module | Effect |
 |---|---|
-| TabPatch | 标签关闭按钮移到左侧 |
-| SidebarPatch | 隐藏已识别的编辑工具右侧栏关闭按钮 |
-| ToolbarPatch | 隐藏 AI 与翻译工具栏入口及四个 AI／翻译右键项 |
-| KeychainFix | 沿用已恢复正常的登录钥匙串路由 |
+| TabPatch | Moves tab close buttons to the left |
+| SidebarPatch | Hides close buttons in recognized editing-tool right sidebars |
+| ToolbarPatch | Hides AI and translation toolbar entries and four AI/translation context-menu items |
+| KeychainFix | Preserves the restored, working keychain routing for login persistence |
 
-大版本失效或其他 LLM 接手：先读 [AGENTS.md](AGENTS.md)，再读
-[交接手册](docs/handoff.md)。完整文档见 [文档索引](docs/index.md)。
-官方更新后的具体步骤见[更新操作指南](docs/update-guide.md)。
+For adaptation after major app changes or handoff to another LLM, read
+[AGENTS.md](AGENTS.md), then the [handoff guide](docs/handoff.md).
+See the [documentation index](docs/index.md) for all documentation and the
+[update guide](docs/update-guide.md) for steps after official app updates.
 
-## 日常使用
+## Everyday use
 
-需要 Xcode 或 Command Line Tools、Python 3。Hopper 仅重新逆向时需要。
-在项目目录运行：
+Requires Xcode or Command Line Tools and Python 3. Hopper is only needed for
+fresh reverse engineering. Run from the project directory:
 
 ```bash
-./patch.sh                              # 官方更新覆盖安装后，全量构建并安装
-./patch.sh --check                      # 只读检查加载命令、签名、架构、版本和哈希
-./patch.sh --build SidebarPatch         # 只构建一个模块；省略名字则构建四个
-./patch.sh --update SidebarPatch        # 只构建/更新已注入的一个模块
-./patch.sh --test                       # 全部自动测试和临时 app 部署演练
-./patch.sh --status-json                # 机器可读身份报告，不包含完整签名检查
-./patch.sh --record-compatibility       # 采集观察，人工验收字段保持 pending
-./patch.sh --restore                    # 恢复匹配版本/构建的完整官方 app
+./patch.sh                              # Build and install all modules after an official in-place update
+./patch.sh --check                      # Read-only checks of load commands, signatures, architectures, versions, and hashes
+./patch.sh --build SidebarPatch         # Build one module; omit the name to build all four
+./patch.sh --update SidebarPatch        # Build/update only this already-injected module
+./patch.sh --test                       # Run all automated tests and temporary-app deployment exercises
+./patch.sh --status-json                # Machine-readable identity report; excludes full signature checks
+./patch.sh --record-compatibility       # Capture observations; leave manual validation fields pending
+./patch.sh --restore                    # Restore a complete official app matching the version/build
 ```
 
-模块名可选 `TabPatch`、`SidebarPatch`、`ToolbarPatch`、`KeychainFix`。
-`--update` 不修改或重签主程序，不更新其他模块；目标尚未注入或路径不匹配时，
-需使用全量安装。应用更新通常会抹掉注入，所以**官方覆盖更新后运行 `./patch.sh`**，
-而不是单模块更新。若内部实现变化，需按交接手册适配，不能保证只重跑就兼容。
+Valid module names are `TabPatch`, `SidebarPatch`, `ToolbarPatch`, and `KeychainFix`.
+`--update` does not modify or re-sign the main executable or update other modules.
+If the target has not been injected or its paths do not match, a full installation
+is required. App updates usually remove the injection, so **run `./patch.sh` after
+an official in-place update**. A single-module update is insufficient in that case.
+If internal implementation details have changed, follow the handoff guide to adapt
+the patches; rerunning the installer alone does not guarantee compatibility.
 
-构建和测试不更改实际 app、已安装 dylib 或用户钥匙串；测试只操作临时替身 app。
-安装/更新会正常退出 PDF Expert，尊重未保存文档提示，不强制结束进程。
-确认退出后再执行部署；没有进程查询权限时停止，不把查询失败当作已退出。
+Builds and tests do not change the actual app, installed dylibs, or user keychain;
+tests operate only on temporary stand-in apps. Installation and updates quit PDF
+Expert normally, respect unsaved-document prompts, and never force-terminate it.
+Deployment proceeds only after exit is confirmed. If process-query permission is
+unavailable, deployment stops instead of treating a failed query as proof of exit.
 
-## 版本识别
+## Version identification
 
-默认构建产物在 `build/`；安装文件在 `~/Library/PEPatch/`。每个新 dylib 都配套
-`NAME.json`，记录项目版本、模块源码/构建配方/二进制哈希。安装记录还关联 app 版本。
+Build artifacts default to `build/`; installed files reside in `~/Library/PEPatch/`.
+Each new dylib has a companion `NAME.json` recording the project version and hashes
+of the module source, build recipe, and binary. Installation records also associate
+the module with the app version.
 
-`--check` 分别显示安装版本、真实 SHA256、与当前构建/源码/配方是否匹配。
-JSON 观察还记录主程序 SHA256、实际 app 路径及各架构的补丁引用路径；这些是静态证据，人工验收仍需单独完成。
-旧模块没有元数据会显示 `unknown (untracked)`，这不代表模块失效，也不猜测版本。
-元数据与二进制不匹配则报告错误；源码或构建不同只表明有差异，不证明兼容性有问题。
-重签可能改变字节，因此构建哈希和安装哈希分别保留。技术细节见
-[架构说明](docs/architecture.md)。
+`--check` separately reports the installed version, actual SHA256, and whether the
+module matches the current build, source, and recipe. JSON observations also record
+the main executable's SHA256, actual app path, and patch reference paths for each
+architecture. These are static observations; manual validation remains separate.
+Older modules without metadata appear as `unknown (untracked)`; this does not mean
+they are broken, and no version is guessed. A metadata/binary mismatch is an error.
+Source or recipe differences indicate a difference, not proof of incompatibility.
+Re-signing can change binary bytes, so build and installation hashes are retained
+separately. See the [architecture guide](docs/architecture.md) for technical details.
 
-## 备份与恢复
+## Backup and recovery
 
-全量安装在副本完成注入、签名和验证后提交；进程内失败会尝试回滚。
-只重签外层 bundle，不深度重签嵌套代码。单模块更新同时提交该 dylib 和元数据，
-更新前在 `backup/updates/NAME/<时间>-<哈希>/` 保留旧模块及恢复记录。
+A full installation commits the app copy after injection, signing, and verification
+succeed; failures within the running installer trigger an attempted rollback.
+Only the outer bundle is re-signed; nested code is not recursively re-signed.
+Single-module updates commit the dylib and metadata together, preserving the old
+module and recovery record in `backup/updates/NAME/<timestamp>-<hash>/` first.
 
-完整官方快照保存在 `backup/<版本>-<构建号>-<哈希>/`；恢复检查版本/构建、SHA256、
-Readdle Team ID 和完整签名。备份不会自动清理。旧 `PDF Expert.orig.*` 只有主程序，
-不能恢复整个 bundle 的官方签名；模块更新备份也不等于完整官方 app。
+Complete official snapshots are stored in `backup/<version>-<build>-<hash>/`.
+Restoration checks the version/build, SHA256, Readdle Team ID, and full signature.
+Backups are not cleaned up automatically. Legacy `PDF Expert.orig.*` backups contain
+only the main executable and cannot restore the entire bundle's official signature.
+Module-update backups are also distinct from complete official app snapshots.
 
-如果已有完整官方副本，可先保存：
+If you already have a complete official copy, save it first:
 
 ```bash
 PDF_EXPERT_APP="/path/to/official/PDF Expert.app" ./patch.sh --backup-original
 ./patch.sh --restore
 ```
 
-缺少完整快照时，使用官方安装包恢复应用后再安装补丁。不要拼接主程序或删除签名来
-冒充官方原版。全量安装会拒绝完整签名校验失败的 app；单模块更新不修复已有签名问题。
+Without a complete snapshot, restore the app using an official installer before
+installing the patches again. Do not combine executables or remove signatures to
+present an app as an official original. Full installation rejects apps that fail
+full signature verification; single-module updates do not repair existing signature
+problems.
 
-app、外部 dylib 和元数据不是一个原子事务，断电/SIGKILL 不保证自动回滚。
-回滚本身失败时保留错误指出的 `.pepatch-*` 目录。权限不足时停止，不自动调用 sudo；
-先检查目标父目录、安装目录和备份目录权限，避免把全部产物都变成 root 所有。
+The app, external dylibs, and metadata do not form one atomic transaction. Automatic
+rollback is not guaranteed after a power failure or SIGKILL. If rollback itself
+fails, retain the `.pepatch-*` directories identified in the error. Insufficient
+permissions stop the operation; sudo is never invoked automatically. Check the
+target's parent directory, installation directory, and backup directory permissions
+first to avoid making all artifacts root-owned.
 
-## 已确认的登录基线
+## Confirmed login baseline
 
-v1.3.1 收窄 KeychainFix 查询范围后出现重启需登录的回归；v1.3.2 已撤回，用户确认正常。
-v1.4.x **保留统一查询路由，只改善诊断日志**，不再用 service/class/DP/group 同时匹配
-限制读写。详细证据见 [兼容性记录](docs/compatibility.md)。
+Narrowing KeychainFix query matching in v1.3.1 caused a regression requiring login
+after each restart. v1.3.2 reverted that restriction, and the user confirmed recovery.
+v1.4.x **preserves uniform query routing and only improves diagnostic logging**;
+reads and writes are no longer restricted to queries simultaneously matching
+service/class/DP/group. See the [compatibility record](docs/compatibility.md) for
+detailed evidence.
 
-ad-hoc 签名会改变应用身份，可能影响钥匙串、iCloud、扩展等。自动测试不能代替
-真实界面、保存文档和登录后重启验收；arm64 构建通过也不等于 arm64 运行验证。
+Ad-hoc signing changes the app's identity and may affect the keychain, iCloud,
+extensions, and other features. Automated tests cannot replace real UI, document
+saving, and login/restart validation. A successful arm64 build does not establish
+arm64 runtime compatibility.
 
-## 调试与配置
+## Debugging and configuration
 
-ToolbarPatch 额外隐藏右键中的 Summarize、Explain、Translate to、Translate PDF，
-按 action／语言子菜单类型匹配；Translate PDF 闭包项还精确核对应用的本地化标题。保留主菜单入口和 AI／翻译业务，
-不修改 SwiftUI 面板的关闭按钮。`TOOLBARPATCH_DISABLE` 同时停用工具栏与菜单过滤。
-菜单过滤的自动回归已覆盖；2026-10-15 用户已确认 v1.4.2 四个右键项隐藏正常，
-确认仅绑定 3.13.4 build 1177 / Intel，未来版本仍需重新验收。
+ToolbarPatch also hides Summarize, Explain, Translate to, and Translate PDF from
+context menus, matching actions and language-submenu types. The Translate PDF
+closure item additionally requires an exact match against the app's localized
+title. Main-menu entries and underlying AI/translation functionality remain
+available; SwiftUI panel close buttons are unchanged. `TOOLBARPATCH_DISABLE`
+disables both toolbar and menu filtering. Automated regression tests cover menu
+filtering. On 2026-10-15, the user confirmed that v1.4.2 hid all four context-menu
+items. That confirmation applies only to 3.13.4 build 1177 on Intel; future versions
+require fresh validation.
 
-直接 exec 主程序时设置环境变量；`open -a` 不传递这些变量：
+Set environment variables when executing the main binary directly; `open -a` does
+not pass these variables through:
 
-| 变量 | 用途 |
+| Variable | Purpose |
 |---|---|
-| `TABPATCH_DEBUG=1` | 标签约束日志 |
-| `SIDEBARPATCH_DEBUG=1` / `TOOLBARPATCH_DEBUG=1` | 按钮 identifier 诊断 |
-| `KEYCHAINFIX_DEBUG=1` | 操作、状态码/错误说明、class/字段存在性；不输出账号或字段值 |
-| `SIDEBARPATCH_DISABLE=1` / `TOOLBARPATCH_DISABLE=1` | 停用对应界面修改，保留原方法调用 |
-| `KEYCHAINFIX_DISABLE=1` | 启动时跳过 fishhook 安装，不删除或迁移已有凭据 |
+| `TABPATCH_DEBUG=1` | Tab constraint logging |
+| `SIDEBARPATCH_DEBUG=1` / `TOOLBARPATCH_DEBUG=1` | Button identifier diagnostics |
+| `KEYCHAINFIX_DEBUG=1` | Operations, status codes/error descriptions, class, and field presence; no account or field values |
+| `SIDEBARPATCH_DISABLE=1` / `TOOLBARPATCH_DISABLE=1` | Disable the corresponding UI changes while preserving original method calls |
+| `KEYCHAINFIX_DISABLE=1` | Skip fishhook installation at startup without deleting or migrating existing credentials |
 
-开关按变量是否存在判断，包括值为 `0` 的情况；取消设置才会关闭开关。
-日志默认不输出每次钥匙串调用；启动时仍保留补丁安装结果日志。
+Switches are enabled whenever the variable exists, including when its value is
+`0`; unset the variable to turn the switch off. Individual keychain calls are not
+logged by default; patch installation results are still logged at startup.
 
-| 配置变量 | 默认值 |
+| Configuration variable | Default |
 |---|---|
 | `PDF_EXPERT_APP` | `/Applications/PDF Expert.app` |
-| `PEPATCH_BUILD_DIR` | 项目 `build/` |
-| `PEPATCH_BACKUP_DIR` | 项目 `backup/` |
+| `PEPATCH_BUILD_DIR` | Project `build/` directory |
+| `PEPATCH_BACKUP_DIR` | Project `backup/` directory |
 | `PEPATCH_INSTALL_DIR` | `~/Library/PEPatch` |
 
-可用 `DEVELOPER_DIR`、`CLANG`、`SDKROOT`、`PYTHON` 覆盖工具路径。
-注入使用绝对 dylib 路径；迁移安装目录后需全量重装补丁，长路径可能耗尽 header 空间。
-fishhook 来源及许可证见 [vendor 说明](src/vendor/README.md)。
+Use `DEVELOPER_DIR`, `CLANG`, `SDKROOT`, and `PYTHON` to override tool paths.
+Injection uses absolute dylib paths; moving the installation directory requires a
+full patch reinstallation, and long paths may exhaust Mach-O header space.
+See the [vendor notes](src/vendor/README.md) for fishhook's source and license.
