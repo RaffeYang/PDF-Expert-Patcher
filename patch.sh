@@ -4,7 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_PATH="${PDF_EXPERT_APP:-/Applications/PDF Expert.app}"
 BUILD_DIR="${PEPATCH_BUILD_DIR:-$ROOT/build}"
-BACKUP_DIR="${PEPATCH_BACKUP_DIR:-$ROOT/backup}"
 INSTALL_DIR="${PEPATCH_INSTALL_DIR:-$HOME/Library/PEPatch}"
 usage() {
   cat <<'USAGE'
@@ -15,8 +14,6 @@ Usage: ./patch.sh                         Build/install all four patches
        ./patch.sh --check                Read-only signatures/architecture/identity
        ./patch.sh --status-json          Read-only machine-readable identity
        ./patch.sh --record-compatibility Capture observation; manual results pending
-       ./patch.sh --restore              Restore complete matching official app
-       ./patch.sh --backup-original      Save complete official app snapshot
 PATCH: TabPatch | SidebarPatch | ToolbarPatch | KeychainFix
 USAGE
 }
@@ -38,8 +35,6 @@ case "${1:-}" in
   --check) action=check ;;
   --status-json) action=status-json ;;
   --record-compatibility) action=record ;;
-  --restore) action=restore ;;
-  --backup-original) action=backup ;;
   '') [[ $# == 0 ]] || { usage >&2; exit 2; }; action=install ;;
   *) usage >&2; exit 2 ;;
 esac
@@ -55,7 +50,7 @@ fi
 for tool in codesign lipo ditto pgrep osascript; do
   command -v "$tool" >/dev/null || { echo "ERROR: required tool missing: $tool" >&2; exit 1; }
 done
-args=(--app "$APP_PATH" --build "$BUILD_DIR" --backup "$BACKUP_DIR" --install-dir "$INSTALL_DIR")
+args=(--app "$APP_PATH" --build "$BUILD_DIR" --install-dir "$INSTALL_DIR")
 if [[ "$action" == install ]]; then
   "$ROOT/tools/build.sh"
   "$PE_PYTHON" "$ROOT/tools/deploy.py" preflight "${args[@]}"
@@ -64,7 +59,7 @@ elif [[ "$action" == update ]]; then
   args+=(--patch "$selected")
   "$PE_PYTHON" "$ROOT/tools/deploy.py" preflight-update "${args[@]}"
 fi
-if [[ "$action" == install || "$action" == restore || "$action" == update ]]; then
+if [[ "$action" == install || "$action" == update ]]; then
   # A sandbox/process-inspection failure is not evidence that the app is closed.
   if pgrep -x 'PDF Expert' >/dev/null; then
     osascript - "$APP_PATH" <<'APPLESCRIPT'

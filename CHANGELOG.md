@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.4.3 (2026-11-18)
+
+- 按用户要求移除备份机制：安装不再保存官方完整快照，`--update` 不再保留旧模块，
+  `backup/` 目录已清空删除。`--backup-original`、`--restore`、`PEPATCH_BACKUP_DIR`
+  一并移除；恢复到官方 app 只能使用对应版本的官方安装包。
+- 进程内回滚不变：全量安装失败仍回滚 app 和库；单模块更新失败仍回滚 dylib 和元数据。
+- 同步 README、handoff、architecture、update-guide、index、AGENTS；
+  design.md（v1.0 历史快照）与 compatibility.md（历史证据）按既有政策保留原文。
+
 ## v1.4.2 (2026-10-15)
 
 - 修复 v1.4.1 漏掉的 Translate PDF 右键项：真实入口使用 RDAppKit 的

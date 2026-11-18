@@ -32,7 +32,7 @@
 
 - 当前安装器需要工具生成的 `.json` 构建元数据。手工编译的旧 dylib 不要伪造版本。
 - `--check` 是只读检查；签名/加载命令正常不证明功能正常。
-- 完整官方备份与单 dylib 更新备份不同。旧 `PDF Expert.orig.*` 不是完整官方恢复来源。
 - 不使用 `codesign --deep --sign` 重写嵌套身份；deep verification 与 deep signing 不同。
-- `build/`、`backup/` 是本地产物，可能含 root 所有文件；先查权限，不盲用 sudo 重跑全部流程。
+- `build/` 是本地产物，可能含 root 所有文件；先查权限，不盲用 sudo 重跑全部流程。
+  备份机制已于 v1.4.3 移除，工具不再创建任何本地备份。
 - 本地 `opencode.json` 不代表任意 LLM 自动有 Hopper MCP；先探测当前环境可用工具。

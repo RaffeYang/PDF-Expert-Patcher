@@ -95,7 +95,6 @@ playground.xcworkspace
 
 # Local patcher artifacts
 /build/
-/backup/
 __pycache__/
 *.py[cod]
 

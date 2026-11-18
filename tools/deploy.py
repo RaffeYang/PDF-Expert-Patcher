@@ -8,7 +8,6 @@ import json
 import os
 from pathlib import Path
 import plistlib
-import re
 import shutil
 import subprocess
 import struct
@@ -20,7 +19,6 @@ from inject_lc import atomic_write, load_paths, migrated_bytes, slices
 from provenance import PATCHES, load_build, require_patch, sha, status, write_json
 
 PATCH_NAMES = {name + '.dylib' for name in PATCHES}
-TEAM = '3L68KQB4HG'
 BUNDLE_ID = 'com.readdle.PDFExpert-Mac'
 
 
@@ -67,27 +65,18 @@ def identity_report(app, build, install):
                              'slices': identities}, 'patches': patches}
 
 
-def is_patched(app):
-    return any(Path(p).name in PATCH_NAMES for paths in load_paths(executable(app).read_bytes()) for p in paths)
-
-
 class Deployment:
-    def __init__(self, app, build, backup, install, runner=run):
+    def __init__(self, app, build, install, runner=run):
         self.app = Path(app).absolute()
         self.build = Path(build).absolute()
-        self.backup = Path(backup).absolute()
         self.install = Path(install).absolute()
         self.run = runner
 
     def copy_app(self, src, dst):
         self.run(['ditto', str(src), str(dst)])
 
-    def verify(self, app, official=False):
+    def verify(self, app):
         self.run(['codesign', '--verify', '--deep', '--strict', str(app)])
-        if official:
-            details = self.run(['codesign', '--display', '--verbose=4', str(app)])
-            if ('TeamIdentifier=' + TEAM) not in details.stderr.decode():
-                raise RuntimeError('full original backup requires a valid Readdle signature')
 
     @contextlib.contextmanager
     def locked(self):
@@ -98,56 +87,6 @@ class Deployment:
             except BlockingIOError:
                 raise RuntimeError('another deployment is running')
             yield
-
-    def snapshot_original(self):
-        if is_patched(self.app):
-            print('NOTICE: legacy/patched app; no new official snapshot. Existing full backups are retained.')
-            return
-        self.verify(self.app, official=True)
-        info = metadata(self.app)
-        sha = digest(executable(self.app))
-        key = '-'.join(info[k] for k in ('CFBundleShortVersionString', 'CFBundleVersion'))
-        key = re.sub(r'[^a-zA-Z0-9._-]', '_', key) + '-' + sha[:16]
-        self.backup.mkdir(parents=True, exist_ok=True)
-        destination = self.backup / key
-        if destination.exists():
-            self.validate_snapshot(destination, info)
-            return
-        with tempfile.TemporaryDirectory(prefix='.snapshot-', dir=self.backup) as tmp:
-            tmp = Path(tmp)
-            self.copy_app(self.app, tmp / 'original.app')
-            self.verify(tmp / 'original.app', official=True)
-            if digest(executable(tmp / 'original.app')) != sha:
-                raise RuntimeError('application changed while creating backup')
-            (tmp / 'manifest.json').write_text(json.dumps({
-                'schema': 1, 'metadata': info, 'executable_sha256': sha,
-                'created': time.time()}, indent=2) + '\n')
-            # Move the contents into a unique final directory after validation.
-            os.rename(tmp, destination)
-        print('Full official backup: ' + str(destination))
-
-    def validate_snapshot(self, directory, info):
-        manifest = json.loads((directory / 'manifest.json').read_text())
-        original = directory / 'original.app'
-        if manifest.get('schema') != 1 or manifest.get('metadata') != info or metadata(original) != info:
-            raise RuntimeError('backup has no matching version/build metadata')
-        if digest(executable(original)) != manifest.get('executable_sha256'):
-            raise RuntimeError('backup executable hash mismatch')
-        if is_patched(original):
-            raise RuntimeError('backup is patched, refusing official restore')
-        self.verify(original, official=True)
-        return original
-
-    def find_original(self):
-        info = metadata(self.app)
-        candidates = []
-        for manifest in self.backup.glob('*/manifest.json'):
-            data = json.loads(manifest.read_text())
-            if data.get('metadata') == info:
-                candidates.append((data.get('created', 0), manifest.parent))
-        if not candidates:
-            raise RuntimeError('no matching complete official backup; legacy executable backups cannot restore bundle signatures')
-        return self.validate_snapshot(max(candidates, key=lambda entry: entry[0])[1], info)
 
     def sign_candidate(self, candidate, work):
         # Entitlements come from the validated current app, before modifying it.
@@ -260,7 +199,6 @@ class Deployment:
             libs.mkdir()
             for name in PATCHES:
                 self.prepare_library(name, libs)
-            self.snapshot_original()
             self.copy_app(self.app, candidate)
             atomic_write(executable(candidate), patched)
             self.sign_candidate(candidate, work)
@@ -301,24 +239,6 @@ class Deployment:
         self.run(['lipo', str(library), '-verify_arch', 'x86_64', 'arm64'])
         self.run(['codesign', '--verify', '--strict', str(library)])
 
-    def backup_module(self, name):
-        current = self.install / (name + '.dylib')
-        if not current.exists():
-            return
-        parent = self.backup / 'updates' / name
-        parent.mkdir(parents=True, exist_ok=True)
-        destination = parent / (str(time.time_ns()) + '-' + sha(current)[:16])
-        destination.mkdir()
-        for suffix in ('.dylib', '.json'):
-            source = self.install / (name + suffix)
-            if source.exists():
-                shutil.copy2(source, destination / source.name)
-        write_json(destination / 'recovery.json', {
-            'patch': name, 'binary_sha256': sha(current), 'target_app': metadata(self.app),
-            'metadata_present': (destination / (name + '.json')).is_file(),
-            'note': 'Previous installed module; not necessarily built from current sources.'})
-        print('Previous module backup: ' + str(destination))
-
     def update_one(self, name):
         self.preflight_update(name)
         before = digest(executable(self.app))
@@ -327,26 +247,9 @@ class Deployment:
             libs = work / 'libraries'
             libs.mkdir()
             self.prepare_library(name, libs)
-            self.backup_module(name)
             # No app copy, injection, re-signing or app-directory mutation.
             self.commit(None, work, {p.name: p for p in libs.iterdir()}, expected_app_hash=before)
         print('Updated only ' + name + '; app executable/signature untouched. Restart to load it.')
-
-    def save_original(self):
-        metadata(self.app)
-        if is_patched(self.app):
-            raise RuntimeError('cannot save a patched app as an official original')
-        with self.locked():
-            self.snapshot_original()
-
-    def restore(self):
-        with self.locked(), self.workspace() as work:
-            original = self.find_original()
-            candidate = work / 'candidate.app'
-            self.copy_app(original, candidate)
-            self.verify(candidate, official=True)
-            self.commit(candidate, work)
-        print('Restored complete matching official app; shared dylibs retained for other copies.')
 
     def check(self):
         info = metadata(self.app)
@@ -381,10 +284,6 @@ class Deployment:
             if isinstance(error, subprocess.CalledProcessError) and error.stderr:
                 print(error.stderr.decode(errors='replace').strip())
             healthy = False
-        try:
-            print('official restore: ' + str(self.find_original()))
-        except (RuntimeError, OSError, ValueError) as error:
-            print('official restore unavailable: ' + str(error))
         raw = executable(self.app).read_bytes()
         for cls in (b'_TtC14PDF_Expert_DMG14TabContentView', b'RDAKButton'):
             print('{}: {}'.format(cls.decode(), 'found' if cls in raw else 'NOT FOUND'))
@@ -394,14 +293,13 @@ class Deployment:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('install', 'restore', 'check', 'backup', 'preflight', 'update', 'preflight-update', 'status-json'))
+    parser.add_argument('action', choices=('install', 'check', 'preflight', 'update', 'preflight-update', 'status-json'))
     parser.add_argument('--app', required=True)
     parser.add_argument('--build', required=True)
-    parser.add_argument('--backup', required=True)
     parser.add_argument('--install-dir', required=True)
     parser.add_argument('--patch', choices=PATCHES)
     args = parser.parse_args()
-    deployment = Deployment(args.app, args.build, args.backup, args.install_dir)
+    deployment = Deployment(args.app, args.build, args.install_dir)
     if args.action in ('update', 'preflight-update'):
         if not args.patch:
             parser.error('--patch is required for module update')
@@ -411,7 +309,7 @@ def main():
     if args.action == 'status-json':
         print(json.dumps(identity_report(deployment.app, deployment.build, deployment.install), indent=2))
         return
-    getattr(deployment, {'install': 'install_patches', 'restore': 'restore', 'check': 'check', 'backup': 'save_original', 'preflight': 'preflight'}[args.action])()
+    getattr(deployment, {'install': 'install_patches', 'check': 'check', 'preflight': 'preflight'}[args.action])()
 
 
 if __name__ == '__main__':

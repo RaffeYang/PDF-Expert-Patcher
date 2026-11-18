@@ -17,15 +17,15 @@ app = pathlib.Path(sys.argv[1])
  'CFBundleIdentifier': 'com.readdle.PDFExpert-Mac', 'CFBundleShortVersionString': '0.0.test',
  'CFBundleVersion': '1', 'CFBundleExecutable': 'PDF Expert', 'CFBundlePackageType': 'APPL'}))
 PY
-# Model a legacy patched bundle without a full official backup.
+# Model a legacy patched bundle from before provenance metadata existed.
 "$PE_PYTHON" "$ROOT/tools/inject_lc.py" "$APP/Contents/MacOS/PDF Expert" /old/TabPatch.dylib
 codesign --force --sign - "$APP"
 for pass in 1 2; do
   "$PE_PYTHON" "$ROOT/tools/deploy.py" install --app "$APP" \
-    --build "${PEPATCH_BUILD_DIR:-$ROOT/build}" --backup "$WORK/backup" --install-dir "$INSTALL"
+    --build "${PEPATCH_BUILD_DIR:-$ROOT/build}" --install-dir "$INSTALL"
 done
 "$PE_PYTHON" "$ROOT/tools/deploy.py" check --app "$APP" \
-  --build "${PEPATCH_BUILD_DIR:-$ROOT/build}" --backup "$WORK/backup" --install-dir "$INSTALL"
+  --build "${PEPATCH_BUILD_DIR:-$ROOT/build}" --install-dir "$INSTALL"
 "$PE_PYTHON" - "$ROOT/tools" "$APP/Contents/MacOS/PDF Expert" "$INSTALL" <<'PY'
 import pathlib, sys
 sys.path.insert(0, sys.argv[1])
@@ -49,20 +49,14 @@ app_state = {p: file_state(p) for p in app.rglob('*') if p.is_file()}
 env = dict(os.environ, PEPATCH_BUILD_DIR=str(build))
 subprocess.run([str(root / 'patch.sh'), '--build', 'SidebarPatch'], env=env, check=True)
 subprocess.run([sys.executable, str(root / 'tools/deploy.py'), 'update', '--patch', 'SidebarPatch',
-               '--app', str(app), '--build', str(build), '--backup', str(work / 'backup'),
+               '--app', str(app), '--build', str(build),
                '--install-dir', str(install)], check=True)
 assert all(file_state(p) == state for p, state in untouched.items()), 'unselected artifact changed'
 assert {p: file_state(p) for p in app.rglob('*') if p.is_file()} == app_state, 'module update modified app'
 record = json.loads((install / 'SidebarPatch.json').read_text())
 assert record['project_version'] == (root / 'VERSION').read_text().strip()
 assert record['binary_sha256'] == file_state(install / 'SidebarPatch.dylib')[0]
-assert list((work / 'backup/updates/SidebarPatch').glob('*/SidebarPatch.dylib'))
 print('REAL SINGLE-MODULE BUILD/UPDATE PASSED')
 PYTEST
-if "$PE_PYTHON" "$ROOT/tools/deploy.py" restore --app "$APP" \
-    --build "${PEPATCH_BUILD_DIR:-$ROOT/build}" --backup "$WORK/backup" --install-dir "$INSTALL"; then
-  echo 'FAIL: restore without official snapshot unexpectedly succeeded' >&2
-  exit 1
-fi
 codesign --verify --deep --strict "$APP"
 echo 'REAL DEPLOYMENT INTEGRATION PASSED'

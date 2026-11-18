@@ -53,7 +53,7 @@ class DeployTests(unittest.TestCase):
                 'binary_sha256': sha(binary), 'built_at': 'test'}))
         self.calls = []
         self.fail_sign = False
-        self.engine = self.d.Deployment(self.app, self.build, self.root / 'backup',
+        self.engine = self.d.Deployment(self.app, self.build,
                                         self.install, runner=self.runner)
 
     def tearDown(self):
@@ -94,7 +94,6 @@ class DeployTests(unittest.TestCase):
         for name, content in others.items():
             self.assertEqual((self.install / name).read_bytes(), content)
         self.assertFalse(any(args[0] == 'ditto' or str(self.app) in args for args in self.calls))
-        self.assertTrue(list((self.root / 'backup/updates/SidebarPatch').glob('*/SidebarPatch.dylib')))
 
     def test_build_race_is_rejected_before_signing(self):
         self.engine.install_patches()
@@ -138,18 +137,6 @@ class DeployTests(unittest.TestCase):
                 self.engine.update_one('SidebarPatch')
         self.assertEqual((self.install / 'SidebarPatch.dylib').read_bytes(), old_library)
         self.assertEqual((self.install / 'SidebarPatch.json').read_bytes(), old_record)
-
-    def test_success_and_restore_full_bundle(self):
-        original = (self.app / 'Contents/MacOS/PDF Expert').read_bytes()
-        (self.app / 'Contents/resource').write_text('pristine')
-        self.engine.install_patches()
-        self.assertNotEqual((self.app / 'Contents/MacOS/PDF Expert').read_bytes(), original)
-        for name in self.d.PATCHES:
-            self.assertEqual((self.install / (name + '.dylib')).read_bytes(), b'new-' + name.encode())
-        (self.app / 'Contents/resource').write_text('changed')
-        self.engine.restore()
-        self.assertEqual((self.app / 'Contents/MacOS/PDF Expert').read_bytes(), original)
-        self.assertEqual((self.app / 'Contents/resource').read_text(), 'pristine')
 
     def test_sign_failure_leaves_app_and_libraries_unchanged(self):
         original = (self.app / 'Contents/MacOS/PDF Expert').read_bytes()
@@ -215,45 +202,6 @@ class DeployTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'invalid signature'):
             self.engine.preflight()
         self.assertFalse(self.install.exists())
-        self.assertFalse((self.root / 'backup').exists())
-
-    def test_explicit_snapshot_rejects_legacy_patch(self):
-        from inject_lc import patched_bytes
-        exe = self.app / 'Contents/MacOS/PDF Expert'
-        exe.write_bytes(patched_bytes(exe.read_bytes(), ['/old/TabPatch.dylib']))
-        with self.assertRaisesRegex(RuntimeError, 'patched app'):
-            self.engine.save_original()
-        self.assertFalse((self.root / 'backup').exists())
-
-    def test_explicit_original_snapshot_and_reuse(self):
-        self.engine.save_original()
-        self.engine.save_original()
-        self.assertEqual(len(list((self.root / 'backup').glob('*/manifest.json'))), 1)
-
-    def test_restore_rejects_different_build(self):
-        self.engine.install_patches()
-        self.info['CFBundleVersion'] = '9999'
-        self.write_info()
-        current = (self.app / 'Contents/MacOS/PDF Expert').read_bytes()
-        with self.assertRaisesRegex(RuntimeError, 'matching'):
-            self.engine.restore()
-        self.assertEqual((self.app / 'Contents/MacOS/PDF Expert').read_bytes(), current)
-
-    def test_tampered_backup_rejected(self):
-        self.engine.install_patches()
-        snapshot = next((self.root / 'backup').glob('*/original.app/Contents/MacOS/PDF Expert'))
-        snapshot.write_bytes(b'tampered')
-        with self.assertRaisesRegex(RuntimeError, 'hash'):
-            self.engine.restore()
-
-    def test_legacy_patched_app_does_not_become_official_backup(self):
-        from inject_lc import patched_bytes
-        exe = self.app / 'Contents/MacOS/PDF Expert'
-        exe.write_bytes(patched_bytes(exe.read_bytes(), ['/tmp/TabPatch.dylib']))
-        self.engine.install_patches()
-        self.assertFalse(list((self.root / 'backup').glob('*/manifest.json')))
-        with self.assertRaisesRegex(RuntimeError, 'matching'):
-            self.engine.restore()
 
 
 if __name__ == '__main__':

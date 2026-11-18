@@ -4,7 +4,7 @@
 
 | 文档 | 用途 |
 |---|---|
-| [../README.md](../README.md) | 日常使用、命令、更新、备份与恢复 |
+| [../README.md](../README.md) | 日常使用、命令、更新与恢复 |
 | [update-guide.md](update-guide.md) | 官方更新后的全量重装、单模块适配、验收和回退 |
 | [../AGENTS.md](../AGENTS.md) | LLM 必须先读的工作基线与约束 |
 | [handoff.md](handoff.md) | 大版本失效时的诊断、发现、修复与交接步骤 |

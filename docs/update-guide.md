@@ -71,9 +71,7 @@ AI／Translate 的 SwiftUI 面板内部 X 没有修改。右键／工具栏过�
 - 2026-10-15 当前安装的 Widgets Dmg Extension.appex x86_64 签名仍无效。
   单模块更新不修复此问题；在当前 app 上直接全量安装会被 preflight 拒绝。
   下一次完整官方覆盖安装后应重新核验该签名，不把这个历史问题当成新版必然问题。
-- 单模块旧产物：`backup/updates/NAME/<时间>-<哈希>/`，含旧 dylib、元数据、恢复记录。
-  回退操作见 [handoff.md](handoff.md)；不要手工伪造构建元数据。
-- 完整回退：`./patch.sh --restore` 只接受匹配当前版本／build 的完整官方快照。
-  缺少快照时使用对应官方安装包；旧单主程序备份不能恢复整个 bundle 签名。
+- 不要保留或依赖本地备份：工具不再创建任何备份，恢复到官方 app 使用对应版本的
+  官方安装包；不要手工伪造构建元数据或假称旧文件来自当前源码。
 
 详细的静态观察与人工验收边界见 [compatibility.md](compatibility.md)。

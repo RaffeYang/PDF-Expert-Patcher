@@ -9,7 +9,7 @@ A patcher that makes PDF Expert feel more at home on macOS.
 
 ---
 
-Current version: **1.4.2**, as recorded in [VERSION](VERSION). Four independent
+Current version: **1.4.3**, as recorded in [VERSION](VERSION). Four independent
 runtime patches for the official DMG edition of PDF Expert on macOS, with
 **3.13.4 build 1177** as the known compatibility baseline.
 
@@ -38,7 +38,6 @@ fresh reverse engineering. Run from the project directory:
 ./patch.sh --test                       # Run all automated tests and temporary-app deployment exercises
 ./patch.sh --status-json                # Machine-readable identity report; excludes full signature checks
 ./patch.sh --record-compatibility       # Capture observations; leave manual validation fields pending
-./patch.sh --restore                    # Restore a complete official app matching the version/build
 ```
 
 Valid module names are `TabPatch`, `SidebarPatch`, `ToolbarPatch`, and `KeychainFix`.
@@ -72,39 +71,26 @@ Source or recipe differences indicate a difference, not proof of incompatibility
 Re-signing can change binary bytes, so build and installation hashes are retained
 separately. See the [architecture guide](docs/architecture.md) for technical details.
 
-## Backup and recovery
+## Failure handling and recovery
 
 A full installation commits the app copy after injection, signing, and verification
 succeed; failures within the running installer trigger an attempted rollback.
 Only the outer bundle is re-signed; nested code is not recursively re-signed.
-Single-module updates commit the dylib and metadata together, preserving the old
-module and recovery record in `backup/updates/NAME/<timestamp>-<hash>/` first.
+Single-module updates commit the dylib and metadata together; any in-process
+failure rolls both back, and the app executable/signature stays untouched.
 
-Complete official snapshots are stored in `backup/<version>-<build>-<hash>/`.
-Restoration checks the version/build, SHA256, Readdle Team ID, and full signature.
-Backups are not cleaned up automatically. Legacy `PDF Expert.orig.*` backups contain
-only the main executable and cannot restore the entire bundle's official signature.
-Module-update backups are also distinct from complete official app snapshots.
-
-If you already have a complete official copy, save it first:
-
-```bash
-PDF_EXPERT_APP="/path/to/official/PDF Expert.app" ./patch.sh --backup-original
-./patch.sh --restore
-```
-
-Without a complete snapshot, restore the app using an official installer before
-installing the patches again. Do not combine executables or remove signatures to
-present an app as an official original. Full installation rejects apps that fail
-full signature verification; single-module updates do not repair existing signature
-problems.
+The patcher keeps no local backups of the app or previously installed modules. To
+return to the official app, reinstall it from an official installer. Do not combine
+executables or remove signatures to present an app as an official original. Full
+installation rejects apps that fail full signature verification; single-module
+updates do not repair existing signature problems.
 
 The app, external dylibs, and metadata do not form one atomic transaction. Automatic
 rollback is not guaranteed after a power failure or SIGKILL. If rollback itself
 fails, retain the `.pepatch-*` directories identified in the error. Insufficient
 permissions stop the operation; sudo is never invoked automatically. Check the
-target's parent directory, installation directory, and backup directory permissions
-first to avoid making all artifacts root-owned.
+target's parent directory and installation directory permissions first to avoid
+making all artifacts root-owned.
 
 ## Confirmed login baseline
 
@@ -151,7 +137,6 @@ logged by default; patch installation results are still logged at startup.
 |---|---|
 | `PDF_EXPERT_APP` | `/Applications/PDF Expert.app` |
 | `PEPATCH_BUILD_DIR` | Project `build/` directory |
-| `PEPATCH_BACKUP_DIR` | Project `backup/` directory |
 | `PEPATCH_INSTALL_DIR` | `~/Library/PEPatch` |
 
 Use `DEVELOPER_DIR`, `CLANG`, `SDKROOT`, and `PYTHON` to override tool paths.

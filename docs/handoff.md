@@ -138,22 +138,8 @@ getProcedureAtAddress、decompile。不要假设 getAddressForLabel/getDisassemb
 先检查 previous.app / previous-libraries 的内容与签名，不把不明文件覆盖到正在运行的 app。
 断电/SIGKILL 不能保证自动回滚，保留恢复目录和错误信息再处理。
 
-完整官方恢复：`./patch.sh --restore`，必须匹配版本/构建号/哈希/官方签名。
-旧单主程序备份、模块更新备份不能当作完整 app；没有完整快照时通过官方来源恢复。
-
-单模块更新的旧库在 `backup/updates/NAME/<时间>-<哈希>/`。若该备份具有有效 NAME.json，
-维护者在确认 app 已正常退出后可用部署器直接恢复，而不重新构建覆盖备份：
-
-```bash
-# 用当前环境的 python3；先将路径换成已核验的备份目录。此命令会修改实际安装模块。
-python3 tools/deploy.py update --patch SidebarPatch \
-  --app "/Applications/PDF Expert.app" \
-  --build "/path/to/verified/module-backup" \
-  --backup "$PWD/backup" --install-dir "$HOME/Library/PEPatch"
-```
-
-这仍会保留回退前的模块备份。旧无元数据备份需要根据 recovery.json 核验实际 hash
-后单独制定恢复操作，不得伪造项目版本或假称与当前源码一致。
+工具不保存任何本地备份；恢复到官方 app 只能使用对应版本的官方安装包，
+旧主程序备份、旧模块文件或去签名副本都不能冒充官方原版。
 
 ## 7. 给下一位 LLM 的交接模板
 
